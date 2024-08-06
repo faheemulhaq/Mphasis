@@ -1,23 +1,47 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import bcrypt
 
-app = FastAPI()
+app = Flask(__name__)
+CORS(app)
 
-users_db = {}
+# Sample user data
+users = {}
 
-class User(BaseModel):
-    email: str
-    password: str
+# Helper function to hash passwords
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-@app.post("/register")
-def register(user: User):
-    if user.email in users_db:
-        raise HTTPException(status_code=400, detail="User already registered")
-    users_db[user.email] = user.password
-    return {"message": "User registered successfully"}
+# Helper function to check password
+def check_password(password, hashed):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed)
 
-@app.post("/login")
-def login(user: User):
-    if user.email not in users_db or users_db[user.email] != user.password:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"message": "Login successful"}
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    if email in users:
+        return jsonify({"message": "User already exists"}), 400
+    
+    users[email] = {
+        'password': hash_password(password)
+    }
+    return jsonify({"message": "User registered successfully"}), 200
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    user = users.get(email)
+    
+    if not user or not check_password(password, user['password']):
+        return jsonify({"message": "Invalid email or password"}), 401
+    
+    return jsonify({"message": "Login successful"}), 200
+
+if __name__ == '__main__':
+    app.run(port=8501, debug=True)
