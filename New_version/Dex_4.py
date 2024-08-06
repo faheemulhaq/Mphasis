@@ -13,7 +13,7 @@ import pyttsx3
 import speech_recognition as sr
 import openpyxl
 
-backend_url = "http://127.0.0.1:8000"  # Ensure this matches your backend URL
+backend_url = "http://127.0.0.1:8501"  # Ensure this matches your backend URL
 
 load_dotenv()
 
@@ -236,7 +236,7 @@ def main():
             response = register_user(email, password)
             st.write(response.status_code)  # Log the response status code for debugging
             st.write(response.text)  # Log the response text for debugging
-            if response.status_code == 201:
+            if response.status_code == 200:  # Assuming 200 for success
                 st.success("User registered successfully!")
             else:
                 st.error("Registration failed. Try a different email.")
@@ -251,14 +251,14 @@ def main():
             st.write(response.text)  # Log the response text for debugging
             if response.status_code == 200:
                 st.success("Login successful!")
-                st.session_state.auth_token = response.json()['access_token']
+                st.session_state.authenticated = True
                 st.session_state.user_email = email  # Save the user's email in session state
                 introduce_dexter(email)  # Introduce Dexter to the user
             else:
                 st.error("Login failed. Check your credentials.")
 
     # If user is authenticated
-    if 'auth_token' in st.session_state:
+    if st.session_state.get('authenticated'):
         st.title("Welcome to Dexter!")
 
         # File uploader for various document types
